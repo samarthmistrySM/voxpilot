@@ -1,0 +1,1 @@
+console.log("VoxPilot content script loaded");
