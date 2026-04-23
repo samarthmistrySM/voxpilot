@@ -3,8 +3,14 @@
   "name": "VoxPilot",
   "version": "1.0",
   "description": "Voice-driven browser control",
-  "permissions": ["activeTab", "scripting"],
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
   "background": {
     "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "index.html"
   }
 }
