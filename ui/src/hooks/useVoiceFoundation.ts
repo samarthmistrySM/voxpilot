@@ -79,6 +79,17 @@ export function useVoiceFoundation(): VoiceFoundationState {
             );
             setStatusMessage(msg.message ?? `Error: ${msg.error}`);
             break;
+          case "ACTION_RESULT": {
+            const actionMsg = msg.message ?? "";
+            setStatusMessage(actionMsg);
+            if (actionMsg) {
+              window.speechSynthesis.cancel();
+              const utterance = new SpeechSynthesisUtterance(actionMsg);
+              utterance.lang = "en-US";
+              window.speechSynthesis.speak(utterance);
+            }
+            break;
+          }
         }
       };
 
@@ -188,6 +199,7 @@ export function useVoiceFoundation(): VoiceFoundationState {
   const stopListening = () => {
     setStatus("idle");
     setStatusMessage("Stopped listening.");
+    window.speechSynthesis.cancel();
 
     if (IS_EXTENSION) {
       chrome.runtime.sendMessage({ type: "STOP_LISTENING" });
