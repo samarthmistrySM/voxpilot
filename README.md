@@ -92,18 +92,173 @@ The popup is small and closes easily. Running capture and recognition in the **t
 - **AI layer** — natural language → validated action plan, then the same DOM executor.  
 - **Optional: offscreen document** — long-running listening without depending on an open popup or only tab-scoped speech.
 
-#### V2 voice commands (examples)
+## Voice Commands Reference
 
-Say these on a normal webpage while listening:
+Say these on any normal **https** webpage while VoxPilot is listening.  
+Commands are **case-insensitive** and ignore punctuation — speak naturally.
+
+---
+
+### 🖱️ Click / Activate
+
+Click or activate an element by its visible label, `aria-label`, or accessible name.
 
 | Say | Effect |
 |-----|--------|
-| `click login` / `press sign in` / `tap submit` | Scrolls to best text/label match and clicks |
-| `find password` / `locate search` | Scrolls and focuses first match |
-| `list buttons` / `what links` | Announces a short numbered list (first 12) |
-| `next` / `next button` / `which is next button` | Focus next actionable control |
-| `previous` / `prev button` / `which is previous button` | Focus previous actionable control |
+| `click <name>` | Scrolls to the best-matching element and clicks it |
+| `press <name>` | Same as `click` |
+| `tap <name>` | Same as `click` |
 
-**Heavy pages (e.g. large SPAs, YouTube):** scanning is limited to a few hundred controls so the tab stays fast. Many custom players use **closed Shadow DOM** — Chrome does not let content scripts see inside, so some buttons may never match until we add different strategies (keyboard routing, site-specific helpers, etc.).
+**Examples:** `click login` · `press sign in` · `tap submit`
+
+> If multiple elements score equally, VoxPilot asks you to be more specific and lists the top matches.
+
+---
+
+### 🎯 Click / Activate Focused Element
+
+Click whichever element already has keyboard focus (use after `next` / `previous`).
+
+| Say | Effect |
+|-----|--------|
+| `click` | Clicks the currently focused element |
+| `press` | Same as `click` |
+| `tap` | Same as `click` |
+| `click this` | Same as `click` |
+| `click it` | Same as `click` |
+| `click current` | Same as `click` |
+| `activate` | Same as `click` |
+| `activate this` | Same as `click` |
+
+---
+
+### 🔍 Find / Focus a Named Element
+
+Scroll to and focus an element without clicking it — useful for inspecting before acting.
+
+| Say | Effect |
+|-----|--------|
+| `find <name>` | Scrolls to and focuses the best match |
+| `show <name>` | Same as `find` |
+| `locate <name>` | Same as `find` |
+| `focus <name>` | Same as `find` |
+
+**Examples:** `find password field` · `locate search box` · `show sign up`
+
+---
+
+### 📋 List Page Elements
+
+Announce the first 12 buttons or links on the page so you know what's available.
+
+| Say | Effect |
+|-----|--------|
+| `list buttons` | Reads out up to 12 buttons |
+| `list button` | Same as `list buttons` |
+| `show buttons` | Same as `list buttons` |
+| `what buttons` | Same as `list buttons` |
+| `list links` | Reads out up to 12 links |
+| `list link` | Same as `list links` |
+| `show links` | Same as `list links` |
+| `what links` | Same as `list links` |
+
+---
+
+### ⏭️ Focus Navigation (next / previous)
+
+Move keyboard focus forward or backward through all focusable elements on the page — fast, no DOM scan.
+
+| Say | Effect |
+|-----|--------|
+| `next` | Focus the next focusable control |
+| `next button` | Same as `next` |
+| `next element` | Same as `next` |
+| `next control` | Same as `next` |
+| `next item` | Same as `next` |
+| `which is next` | Same as `next` |
+| `which is next button` | Same as `next` |
+| `previous` | Focus the previous focusable control |
+| `prev` | Same as `previous` |
+| `back` (navigation context) | Same as `previous` |
+| `previous button` | Same as `previous` |
+| `previous element` | Same as `previous` |
+| `previous control` | Same as `previous` |
+| `previous item` | Same as `previous` |
+| `which is previous` | Same as `previous` |
+| `which is previous button` | Same as `previous` |
+
+---
+
+### 📖 Read Focused Element
+
+Hear the accessible name and role of whichever element currently has focus.
+
+| Say | Effect |
+|-----|--------|
+| `read` | Speaks the name + role of the focused element |
+| `read this` | Same as `read` |
+| `what is this` | Same as `read` |
+| `what's this` | Same as `read` |
+| `describe` | Same as `read` |
+
+---
+
+### ⌨️ Text Input
+
+Focus the first visible text field on the page, then type into it.
+
+| Say | Effect |
+|-----|--------|
+| `focus input` | Jumps to the first visible text input or textarea |
+| `focus search` | Same as `focus input` |
+| `focus text` | Same as `focus input` |
+| `focus field` | Same as `focus input` |
+| `focus box` | Same as `focus input` |
+| `go to input` | Same as `focus input` |
+| `go to search` | Same as `focus input` |
+| `type <text>` | Types `<text>` into the currently focused input |
+| `enter <text>` | Same as `type` |
+| `write <text>` | Same as `type` |
+| `input <text>` | Same as `type` |
+
+**Typical flow:** `focus search` → `type hello world`
+
+> `type` fires native `input` and `change` events so React / Vue controlled inputs update correctly.
+
+---
+
+### 📜 Scroll
+
+| Say | Effect |
+|-----|--------|
+| `scroll down` | Scrolls down ~40 % of the viewport |
+| `page down` | Same as `scroll down` |
+| `go down` | Same as `scroll down` |
+| `move down` | Same as `scroll down` |
+| `scroll up` | Scrolls up ~40 % of the viewport |
+| `page up` | Same as `scroll up` |
+| `go up` | Same as `scroll up` |
+| `move up` | Same as `scroll up` |
+
+---
+
+### ↩️ Browser Navigation
+
+| Say | Effect |
+|-----|--------|
+| `go back` | Navigates the browser back one step in history |
+| `navigate back` | Same as `go back` |
+| `back` | Same as `go back` |
+
+---
+
+### 💡 Tips
+
+- **Combine commands naturally:** say `next` a few times to walk to the right control, then say `click` or `read` to act on it.
+- **Name matching is fuzzy:** VoxPilot scores by exact match → substring → word overlap. You don't need to say the full label — `click sign` will match a *Sign in* button.
+- **Heavy pages (YouTube, large SPAs):** element scanning is capped at a few hundred controls for speed. Some buttons inside **closed Shadow DOM** are invisible to extensions and won't respond to named commands.
+- **`focus input` → `type …`** is the recommended two-step for filling search boxes or forms via voice.
+
+---
 
 VoxPilot is built in **small, testable steps**: ship a working voice path first, then wire DOM and AI on top of stable messaging between popup, background, and content scripts.
