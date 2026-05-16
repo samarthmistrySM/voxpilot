@@ -26,7 +26,14 @@
   "content_scripts": [
     {
       "matches": ["http://*/*", "https://*/*"],
-      "js": ["content.js"],
+      "js": [
+        "content/state.js",
+        "content/messaging.js",
+        "content/parser.js",
+        "content/dom.js",
+        "content/actions.js",
+        "content/pipeline.js"
+      ],
       "run_at": "document_idle"
     }
   ]

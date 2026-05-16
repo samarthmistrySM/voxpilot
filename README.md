@@ -8,7 +8,7 @@
 
 - **Voice input** — capture speech, show a live transcript in the popup, and route commands toward the active page.
 - **Speech feedback** — text-to-speech in the popup for confirmations and results.
-- **DOM-aware actions (next)** — find and act on elements (buttons, links, inputs) via content scripts, driven by parsed commands and later by AI.
+- **DOM-aware actions (V2)** — rule-based voice commands in the tab (`click …`, `find …`, `list buttons` / `list links`, `next` / `previous`); spoken feedback in the popup.
 - **Accessible navigation** — prefer semantic cues (e.g. “login button”, `aria-label`, visible text) over brittle selectors alone.
 
 Target browsers: **Chromium family** (Chrome, Brave, Arc). Web Speech and mic behavior can differ by browser; Chrome is the reference environment.
@@ -38,7 +38,7 @@ voxpilot/
 |--------|------|
 | **Popup (`ui/` → built into `extension/`)** | React UI: start/stop listening, transcript, TTS. User gestures start here. |
 | **Service worker (`background.js`)** | Receives commands from the popup, forwards them to the **active tab’s** content script, and **relays** messages from the tab back to the popup so the UI stays in sync. |
-| **Content script (`content.js`)** | Runs on `http(s)` pages: requests microphone access, runs **Web Speech API** recognition, and will execute DOM actions (click, focus, list controls) as commands grow. |
+| **Content script (`content.js`)** | Runs on `http(s)` pages: microphone, **Web Speech API**, **V2 rule-based commands** (click / find / list / next-prev), and `ACTION_RESULT` updates for the popup. |
 
 **Why not only the popup for mic + speech?**  
 The popup is small and closes easily. Running capture and recognition in the **tab** keeps voice tied to the page the user is controlling and avoids some “stuck requesting permission” cases when nothing was listening on the other end.
@@ -87,11 +87,23 @@ The popup is small and closes easily. Running capture and recognition in the **t
 
 ### Roadmap (short)
 
-- **Command parser** — rule-based phrases (“find login button”, “click …”) → structured actions.  
-- **Richer accessibility layer** — headings, landmarks, name computation.  
-- **AI layer** — natural language → validated action plan, then content script execution.  
+- **V2 — Actions** — rule-based commands in the content script: **click / find / list buttons|links / next|previous control**; results relayed to the popup with spoken feedback (`ACTION_RESULT`). DOM collection is **capped and ordered** so large SPAs stay responsive; **open** Shadow DOM is scanned lightly (many sites use **closed** shadows — those controls stay inaccessible to extensions).
+- **Richer accessibility layer** — headings, landmarks, refined name computation and disambiguation.  
+- **AI layer** — natural language → validated action plan, then the same DOM executor.  
 - **Optional: offscreen document** — long-running listening without depending on an open popup or only tab-scoped speech.
 
----
+#### V2 voice commands (examples)
+
+Say these on a normal webpage while listening:
+
+| Say | Effect |
+|-----|--------|
+| `click login` / `press sign in` / `tap submit` | Scrolls to best text/label match and clicks |
+| `find password` / `locate search` | Scrolls and focuses first match |
+| `list buttons` / `what links` | Announces a short numbered list (first 12) |
+| `next` / `next button` / `which is next button` | Focus next actionable control |
+| `previous` / `prev button` / `which is previous button` | Focus previous actionable control |
+
+**Heavy pages (e.g. large SPAs, YouTube):** scanning is limited to a few hundred controls so the tab stays fast. Many custom players use **closed Shadow DOM** — Chrome does not let content scripts see inside, so some buttons may never match until we add different strategies (keyboard routing, site-specific helpers, etc.).
 
 VoxPilot is built in **small, testable steps**: ship a working voice path first, then wire DOM and AI on top of stable messaging between popup, background, and content scripts.

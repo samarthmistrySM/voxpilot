@@ -3,7 +3,23 @@
  *
  * - Popup sends START_LISTENING / STOP_LISTENING here (not directly to tabs).
  * - Content sends TRANSCRIPT / RECOGNITION_* here; we relay to open extension UIs.
+ *
+ * Content scripts are split into focused modules loaded in dependency order.
+ * This list must stay in sync with the content_scripts array in manifest.json.
  */
+
+const CONTENT_SCRIPT_FILES = [
+  "content/state.js",
+  "content/messaging.js",
+  "content/parser.js",
+  "content/dom.js",
+  "content/actions.js",
+  "content/pipeline.js",
+];
+
+// ---------------------------------------------------------------------------
+// Message listener
+// ---------------------------------------------------------------------------
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Relay anything from a tab (content script) to extension pages (popup, etc.)
@@ -31,6 +47,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return false;
 });
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
 async function forwardToActiveTab(payload) {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.id) {
@@ -38,17 +58,23 @@ async function forwardToActiveTab(payload) {
   }
 
   const url = tab.url ?? "";
-  if (url.startsWith("chrome://") || url.startsWith("edge://") || url.startsWith("about:")) {
+  if (
+    url.startsWith("chrome://") ||
+    url.startsWith("edge://") ||
+    url.startsWith("about:")
+  ) {
     throw new Error("Voice does not run on this page type. Open a normal website tab.");
   }
 
   try {
     await chrome.tabs.sendMessage(tab.id, payload);
   } catch {
+    // Content scripts not yet loaded on this tab — inject them now.
     await chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      files: ["content.js"],
+      files: CONTENT_SCRIPT_FILES,
     });
     await chrome.tabs.sendMessage(tab.id, payload);
   }
 }
+
