@@ -111,6 +111,21 @@ function runNavigate(delta) {
   }
   const el = /** @type {HTMLElement} */ (all[idx]);
   el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+
+  // Simulate a real Tab / Shift+Tab keypress so framework-driven sites
+  // (React, Vue, Angular) update their internal focus state, not just
+  // the DOM focus ring that .focus() alone would set.
+  const tabKey = new KeyboardEvent("keydown", {
+    key: "Tab",
+    code: "Tab",
+    shiftKey: delta < 0,
+    bubbles: true,
+    cancelable: true,
+  });
+  document.dispatchEvent(tabKey);
+
+  // Always call .focus() as the reliable fallback — the KeyboardEvent above
+  // tells the framework, .focus() ensures the DOM focus ring follows.
   el.focus({ preventScroll: true });
   lastFocusedActionable = el;
   const name = getAccessibleName(el) || el.tagName.toLowerCase();
@@ -119,14 +134,46 @@ function runNavigate(delta) {
 
 /** Click whatever element is currently focused. */
 function runClickCurrent() {
-  const el = /** @type {HTMLElement|null} */ (document.activeElement);
+  // document.activeElement can revert to <body> between the "next" command and
+  // the "click" command because the speech engine briefly steals browser focus.
+  // Fall back to the element we explicitly focused last.
+  let el = /** @type {HTMLElement|null} */ (document.activeElement);
+  if (!el || el === document.body || el === document.documentElement) {
+    el = lastFocusedActionable ?? null;
+  }
   if (!el || el === document.body || el === document.documentElement) {
     notifyActionResult("not_found", "Nothing is focused. Say 'next' to move focus first.", "");
     return;
   }
+
   const name = getAccessibleName(el) || el.tagName.toLowerCase();
   el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+
+  // Re-focus the element so it is the active target before we activate it.
+  el.focus({ preventScroll: true });
+
+  // Dispatch a real Enter keydown — frameworks that ignore .click() often
+  // listen for keyboard activation events (e.g., form submit on Enter).
+  el.dispatchEvent(
+    new KeyboardEvent("keydown", {
+      key: "Enter",
+      code: "Enter",
+      bubbles: true,
+      cancelable: true,
+    })
+  );
+  el.dispatchEvent(
+    new KeyboardEvent("keyup", {
+      key: "Enter",
+      code: "Enter",
+      bubbles: true,
+      cancelable: true,
+    })
+  );
+
+  // Also call .click() for elements that only respond to pointer events.
   if (typeof el.click === "function") el.click();
+
   notifyActionResult("ok", `Clicked: ${name}.`, name);
   invalidateActionableCache();
 }
